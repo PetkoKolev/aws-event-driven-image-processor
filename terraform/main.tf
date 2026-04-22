@@ -21,8 +21,38 @@ resource "aws_s3_bucket_public_access_block" "block" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  bucket = aws_s3_bucket.images.id
+
+  queue {
+    queue_arn = aws_sqs_queue.image_queue.arn
+    events    = ["s3:ObjectCreated:*"]
+  }
+}
+
 resource "aws_sqs_queue" "image_queue" {
   name = "image-processing-queue"
+}
+
+resource "aws_sqs_queue_policy" "allow_s3" {
+  queue_url = aws_sqs_queue.image_queue.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "*"
+        Action = "sqs:SendMessage"
+        Resource = aws_sqs_queue.image_queue.arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = aws_s3_bucket.images.arn
+          }
+        }
+      }
+    ]
+  })
 }
 
 output "bucket_name" {
