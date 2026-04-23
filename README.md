@@ -19,6 +19,7 @@ Flow:
 
 ##  Project Structure
 
+```bash
 backend/
 ├── api/
 └── worker/
@@ -33,6 +34,7 @@ image-processing-pipeline/
 └── provider.tf
 
 terraform/ (legacy setup)
+```
 
 ---
 
