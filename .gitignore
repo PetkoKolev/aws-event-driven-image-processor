@@ -13,6 +13,7 @@ venv/
 # =========================
 # AWS Lambda build artifacts
 # =========================
+*.dist-info/
 PIL/
 pillow.libs/
 *.so
@@ -35,9 +36,3 @@ crash.log
 # macOS
 # =========================
 .DS_Store
-
-# =========================
-# IDEs (optional but clean)
-# =========================
-.vscode/
-.idea/
