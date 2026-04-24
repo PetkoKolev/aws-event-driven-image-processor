@@ -16,7 +16,7 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      BUCKET_NAME = aws_s3_bucket.image_bucket.bucket
+      BUCKET_NAME = aws_s3_bucket.images.bucket
     }
   }
 }
