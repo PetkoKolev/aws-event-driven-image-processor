@@ -31,6 +31,12 @@ jobs:
         run: |
           zip -r ../../dlq_reprocessor.zip .
 
+
+      - name: Build API Lambda package
+        working-directory: image-processing-pipeline/api
+        run: |
+          zip function.zip handler.py    
+      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
