@@ -18,18 +18,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build Lambda package (Linux compatible)
-        working-directory: image-processing-pipeline/lambda
+      # NEW: Build image processor lambda
+      - name: Build image processor package
+        working-directory: image-processing-pipeline/lambda/image_processor
         run: |
-          mkdir -p build
-          pip install -r requirements.txt -t build
-          cp lambda_function.py build/
-          cd build
-          zip -r ../function.zip .
+          pip install -r requirements.txt -t .
+          zip -r ../../image_processor.zip .
+
+      # NEW: Build DLQ reprocessor lambda
+      - name: Build DLQ reprocessor package
+        working-directory: image-processing-pipeline/lambda/dlq_reprocessor
+        run: |
+          zip -r ../../dlq_reprocessor.zip .
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
