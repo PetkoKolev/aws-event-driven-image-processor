@@ -30,6 +30,7 @@ def lambda_handler(event, context):
 
         except Exception as e:
             print("[ERROR] Processing SQS record failed:", str(e))
+            raise e #Required for retries + DLQ
 
     return {"statusCode": 200}
 
@@ -42,7 +43,12 @@ def process_s3_record(s3_record):
 
     print(f"[INFO] Processing file: {key}")
 
-    # ✅ ONLY process uploads/ folder
+    # DLQ TEST: force failure if filename contains "fail"
+    if "fail" in key:
+        print("[TEST] Forced failure triggered")
+        raise Exception("Forced failure for DLQ testing")
+
+    # ONLY process uploads/ folder
     if not key.startswith("uploads/"):
         print("[INFO] Skipping non-upload file")
         return
