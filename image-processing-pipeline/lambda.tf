@@ -1,8 +1,8 @@
 resource "aws_lambda_function" "image_processor" {
   function_name = "image-processor"
 
-  filename         = "lambda/function.zip"
-  source_code_hash = filebase64sha256("lambda/function.zip")
+filename         = "${path.module}/lambda/function.zip"
+source_code_hash = filebase64sha256("${path.module}/lambda/function.zip")
 
   handler = "lambda_function.lambda_handler"
   runtime = "python3.11"
