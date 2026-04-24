@@ -33,7 +33,7 @@ jobs:
 
 
       - name: Build API Lambda package
-        working-directory: image-processing-pipeline/api
+        working-directory: backend/api
         run: |
           zip function.zip handler.py    
       

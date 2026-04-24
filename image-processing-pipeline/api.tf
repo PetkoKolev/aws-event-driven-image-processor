@@ -4,8 +4,8 @@
 resource "aws_lambda_function" "api" {
   function_name = "image-upload-api"
 
-  filename         = "${path.module}/api/function.zip"
-  source_code_hash = filebase64sha256("${path.module}/api/function.zip")
+  filename         = "${path.module}/../backend/api/function.zip"
+  source_code_hash = filebase64sha256("${path.module}/../backend/api/function.zip")
 
   handler = "handler.lambda_handler"
   runtime = "python3.11"
