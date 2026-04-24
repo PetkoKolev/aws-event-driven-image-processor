@@ -1,36 +1,40 @@
 import json
 import boto3
-from PIL import Image
-import io
 import urllib.parse
+import io
 import os
+from PIL import Image
 
 s3 = boto3.client("s3")
 
-SUPPORTED_FORMATS = ("jpg", "jpeg", "png")
+SUPPORTED_FORMATS = ["jpg", "jpeg", "png"]
+
+
+def log(level, message, **kwargs):
+    print(json.dumps({
+        "level": level,
+        "message": message,
+        **kwargs
+    }))
 
 
 def lambda_handler(event, context):
-    print("[INFO] RAW EVENT:", json.dumps(event))
-
-    if "Records" not in event:
-        print("[WARN] No Records in event")
-        return {"statusCode": 200}
+    log("INFO", "Lambda triggered", raw_event=event)
 
     for record in event["Records"]:
         try:
-            body = json.loads(record["body"])
+            body = record["body"]
 
-            if "Records" not in body:
-                print("[WARN] Skipping non-S3 event:", body)
-                continue
+            # Handle string vs dict body safely
+            if isinstance(body, str):
+                body = json.loads(body)
 
             for s3_record in body["Records"]:
                 process_s3_record(s3_record)
 
         except Exception as e:
-            print("[ERROR] Processing SQS record failed:", str(e))
-            raise e #Required for retries + DLQ
+            log("ERROR", "Processing SQS record failed", error=str(e))
+            raise e  # required for retries + DLQ
 
     return {"statusCode": 200}
 
@@ -41,30 +45,25 @@ def process_s3_record(s3_record):
     bucket = s3_info["bucket"]["name"]
     key = urllib.parse.unquote_plus(s3_info["object"]["key"])
 
-    print(f"[INFO] Processing file: {key}")
+    log("INFO", "Processing file", key=key)
 
-    # DLQ TEST: force failure if filename contains "fail"
-    if "fail" in key:
-        print("[TEST] Forced failure triggered")
-        raise Exception("Forced failure for DLQ testing")
-
-    # ONLY process uploads/ folder
+    # Only process uploads/
     if not key.startswith("uploads/"):
-        print("[INFO] Skipping non-upload file")
+        log("INFO", "Skipping non-upload file", key=key)
         return
 
-    # Skip already processed files
+    # Skip already processed
     if key.startswith("processed/"):
-        print("[INFO] Skipping already processed file")
+        log("INFO", "Skipping already processed file", key=key)
         return
 
-    # Validate extension
     ext = key.split(".")[-1].lower()
+
     if ext not in SUPPORTED_FORMATS:
-        print(f"[WARN] Unsupported file type: {ext}")
+        log("WARN", "Unsupported file type", extension=ext)
         return
 
-    # Get object
+    # Get file
     response = s3.get_object(Bucket=bucket, Key=key)
     image_content = response["Body"].read()
 
@@ -72,15 +71,15 @@ def process_s3_record(s3_record):
     try:
         image = Image.open(io.BytesIO(image_content))
     except Exception:
-        print("[ERROR] Invalid image file")
+        log("ERROR", "Invalid image file", key=key)
         return
 
-    # Resize (maintain aspect ratio)
+    # Resize
     image.thumbnail((300, 300))
 
     buffer = io.BytesIO()
 
-    if ext in ("jpg", "jpeg"):
+    if ext in ["jpg", "jpeg"]:
         image = image.convert("RGB")
         image.save(buffer, format="JPEG", quality=85)
         content_type = "image/jpeg"
@@ -96,7 +95,6 @@ def process_s3_record(s3_record):
     filename = os.path.basename(key)
     name = filename.split(".")[0]
 
-    # Improved naming
     new_key = f"processed/resized-{name}.{new_ext}"
 
     s3.put_object(
@@ -106,4 +104,4 @@ def process_s3_record(s3_record):
         ContentType=content_type
     )
 
-    print(f"[SUCCESS] Created: {new_key}")
+    log("INFO", "File processed successfully", output_key=new_key)
