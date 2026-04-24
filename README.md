@@ -17,6 +17,23 @@ Flow:
 
 ---
 
+## Event Flow
+
+1. User uploads image to `uploads/` folder in S3
+2. S3 emits event notification
+3. Event is sent to SQS queue
+4. Lambda polls SQS and processes image
+5. Processed image is stored in `processed/` folder
+
+### Folder Structure Logic
+
+- `uploads/` → incoming raw images
+- `processed/` → transformed output images
+
+This separation prevents recursive processing and ensures clean data flow. - AWS flagged during testing which helped stop high costs from incurring.
+
+---
+
 ##  Project Structure
 
 ```bash
@@ -51,10 +68,28 @@ Provisioned using Terraform:
 
 ## Current Status
 
-- ✅ S3 → SQS event flow working
-- ✅ Lambda deployed via Terraform
-- ⚠️ Image processing logic basic (in progress)
-- ⚠️ No CI/CD yet
+- ✅ Fully working event-driven pipeline (S3 → SQS → Lambda → S3)
+- ✅ Image resizing with format handling (JPG, PNG)
+- ✅ Safe processing using folder-based filtering
+- ✅ Production-compatible dependency packaging
+- ⚠️ CI/CD pipeline not yet implemented
+
+---
+
+## Challenges & Solutions
+
+### Lambda Dependency Issues
+- Encountered `_imaging` import errors with Pillow
+- Root cause: dependencies built on macOS (incompatible with AWS Lambda Linux runtime)
+- Solution: packaged dependencies using Docker with Lambda-compatible environment
+
+### Architecture Mismatch
+- Initial builds failed due to ARM vs x86 incompatibility
+- Fixed by using correct Lambda base image during packaging
+
+### Event Filtering
+- Ensured only `uploads/` folder triggers processing
+- Prevents infinite loops and unintended executions
 
 ---
 
