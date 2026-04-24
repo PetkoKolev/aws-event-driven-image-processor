@@ -37,11 +37,16 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
-          
+
       - name: Terraform Init
         working-directory: image-processing-pipeline
         run: terraform init
 
+      - name: Terraform Import IAM Role (if exists)
+        working-directory: image-processing-pipeline
+        run: |
+          terraform import aws_iam_role.lambda_role lambda-s3-sqs-role || true
+      
       - name: Terraform Apply
         working-directory: image-processing-pipeline
         run: terraform apply -auto-approve
