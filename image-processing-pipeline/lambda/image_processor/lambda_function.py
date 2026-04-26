@@ -8,6 +8,7 @@ from PIL import Image
 s3 = boto3.client("s3")
 
 SUPPORTED_FORMATS = ["jpg", "jpeg", "png"]
+MAX_SIZE = 1024  # improved from 300
 
 
 def log(level, message, **kwargs):
@@ -25,7 +26,6 @@ def lambda_handler(event, context):
         try:
             body = record["body"]
 
-            # Handle string vs dict body safely
             if isinstance(body, str):
                 body = json.loads(body)
 
@@ -34,7 +34,7 @@ def lambda_handler(event, context):
 
         except Exception as e:
             log("ERROR", "Processing SQS record failed", error=str(e))
-            raise e  # required for retries + DLQ
+            raise e
 
     return {"statusCode": 200}
 
@@ -47,12 +47,10 @@ def process_s3_record(s3_record):
 
     log("INFO", "Processing file", key=key)
 
-    # Only process uploads/
     if not key.startswith("uploads/"):
         log("INFO", "Skipping non-upload file", key=key)
         return
 
-    # Skip already processed
     if key.startswith("processed/"):
         log("INFO", "Skipping already processed file", key=key)
         return
@@ -63,25 +61,25 @@ def process_s3_record(s3_record):
         log("WARN", "Unsupported file type", extension=ext)
         return
 
-    # Get file
     response = s3.get_object(Bucket=bucket, Key=key)
     image_content = response["Body"].read()
 
-    # Open safely
     try:
         image = Image.open(io.BytesIO(image_content))
     except Exception:
         log("ERROR", "Invalid image file", key=key)
         return
 
-    # Resize
-    image.thumbnail((300, 300))
+    original_size = len(image_content)
+
+    # Resize properly
+    image.thumbnail((MAX_SIZE, MAX_SIZE))
 
     buffer = io.BytesIO()
 
     if ext in ["jpg", "jpeg"]:
         image = image.convert("RGB")
-        image.save(buffer, format="JPEG", quality=85)
+        image.save(buffer, format="JPEG", quality=85, optimize=True)
         content_type = "image/jpeg"
         new_ext = "jpg"
 
@@ -104,4 +102,11 @@ def process_s3_record(s3_record):
         ContentType=content_type
     )
 
-    log("INFO", "File processed successfully", output_key=new_key)
+    log(
+        "INFO",
+        "File processed successfully",
+        input_key=key,
+        output_key=new_key,
+        original_size=original_size,
+        new_size=len(buffer.getvalue())
+    )
