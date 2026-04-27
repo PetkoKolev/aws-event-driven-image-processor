@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Upload</title>
+</head>
+<body>
+  <h1>Upload Image</h1>
+
+  <input type="file" id="fileInput" />
+  <button onclick="upload()">Upload</button>
+
+  <h2>Original</h2>
+  <img id="original" width="300"/>
+
+  <h2>Processed</h2>
+  <img id="processed" width="300"/>
+
+  <script>
+    const API_URL = "https://3heztdwn22.execute-api.eu-west-2.amazonaws.com/upload";
+
+    async function upload() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Pick a file");
+
+      // Show original preview
+      document.getElementById("original").src = URL.createObjectURL(file);
+
+      // Step 1: get presigned URL
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": file.type
+        }
+      });
+
+      const data = await res.json();
+
+      // Step 2: upload to S3
+      await fetch(data.upload_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type
+        },
+        body: file
+      });
+
+      // Step 3: show processed image (guess URL)
+      const processedUrl = data.upload_url
+        .split("?")[0]
+        .replace("/uploads/", "/processed/resized-");
+
+      // give Lambda a second to process
+      setTimeout(() => {
+        document.getElementById("processed").src = processedUrl;
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

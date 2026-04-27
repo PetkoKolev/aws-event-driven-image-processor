@@ -12,6 +12,20 @@ ALLOWED_TYPES = ["image/jpeg", "image/png"]
 
 def lambda_handler(event, context):
     try:
+        method = event.get("requestContext", {}).get("http", {}).get("method")
+
+        # HANDLE CORS PREFLIGHT
+        if method == "OPTIONS":
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type"
+                },
+                "body": ""
+            }
+
         headers = event.get("headers", {}) or {}
         content_type = headers.get("content-type", "image/jpeg")
 
@@ -19,6 +33,9 @@ def lambda_handler(event, context):
         if content_type not in ALLOWED_TYPES:
             return {
                 "statusCode": 400,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*"
+                },
                 "body": json.dumps({"error": "Invalid file type"})
             }
 
@@ -43,6 +60,9 @@ def lambda_handler(event, context):
 
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
             "body": json.dumps({
                 "upload_url": upload_url,
                 "file_key": file_key
@@ -52,5 +72,8 @@ def lambda_handler(event, context):
     except Exception as e:
         return {
             "statusCode": 500,
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
             "body": json.dumps({"error": str(e)})
         }
