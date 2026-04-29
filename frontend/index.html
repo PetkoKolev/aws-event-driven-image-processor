@@ -94,11 +94,11 @@
 
       async function checkImage() {
         try {
-          // ✅ ONLY send original key
+          // ONLY send original key
           const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
           const imgData = await res.json();
 
-          // 🔴 CRITICAL SAFETY CHECK
+          // CRITICAL SAFETY CHECK
           if (!imgData.image_url) {
             console.error("Bad image API response:", imgData);
             throw new Error("No image_url returned");
@@ -118,7 +118,7 @@
             throw new Error("Image not ready yet");
           };
 
-          testImg.src = signedUrl + "&t=" + new Date().getTime();
+          testImg.src = signedUrl 
 
         } catch (err) {
           attempts++;
