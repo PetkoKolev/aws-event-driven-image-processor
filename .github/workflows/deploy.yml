@@ -13,12 +13,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 🔧 Build image processor Lambda using Docker (FIXES PIL ISSUE)
+      # Build image processor Lambda using Docker (FIXES PIL ISSUE)
       - name: Build image processor package (Lambda compatible)
         working-directory: image-processing-pipeline/lambda/image_processor
         run: |
-          docker run --rm -v "$PWD":/var/task public.ecr.aws/lambda/python:3.11 \
-          /bin/sh -c "pip install -r requirements.txt -t ."
+          docker run --rm \
+            -v "$PWD":/var/task \
+            --entrypoint /bin/sh \
+            public.ecr.aws/lambda/python:3.11 \
+            -c "pip install -r requirements.txt -t ."
           zip -r ../../image_processor.zip .
 
       # DLQ reprocessor (no dependencies)
