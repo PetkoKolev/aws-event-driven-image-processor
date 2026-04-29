@@ -13,30 +13,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      # NEW: Build image processor lambda
-      - name: Build image processor package
+      # 🔧 Build image processor Lambda using Docker (FIXES PIL ISSUE)
+      - name: Build image processor package (Lambda compatible)
         working-directory: image-processing-pipeline/lambda/image_processor
         run: |
-          pip install -r requirements.txt -t .
+          docker run --rm -v "$PWD":/var/task public.ecr.aws/lambda/python:3.11 \
+          /bin/sh -c "pip install -r requirements.txt -t ."
           zip -r ../../image_processor.zip .
 
-      # NEW: Build DLQ reprocessor lambda
+      # DLQ reprocessor (no dependencies)
       - name: Build DLQ reprocessor package
         working-directory: image-processing-pipeline/lambda/dlq_reprocessor
         run: |
           zip -r ../../dlq_reprocessor.zip .
 
-
+      # API Lambda (no dependencies)
       - name: Build API Lambda package
         working-directory: backend/api
         run: |
           zip function.zip handler.py    
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
