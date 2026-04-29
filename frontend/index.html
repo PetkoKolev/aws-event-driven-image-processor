@@ -94,7 +94,7 @@
 
           const processedKey = `processed/resized-${fileId}.${extension}`;
 
-          const res = await fetch(`${API_BASE}/image?key=${processedKey}`);
+          const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
           const imgData = await res.json();
 
           const signedUrl = imgData.image_url;
