@@ -37,6 +37,12 @@ resource "aws_lambda_permission" "api_gw" {
 resource "aws_apigatewayv2_api" "api" {
   name          = "image-upload-api"
   protocol_type = "HTTP"
+
+  cors_configurstion {
+    allow_origin = ["*"]
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["content-type"]
+  }
 }
 
 # =========================
