@@ -21,8 +21,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-
-      # CloudWatch Logs
       {
         Effect = "Allow"
         Action = [
@@ -32,8 +30,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
         Resource = "*"
       },
-
-      # SQS permissions
       {
         Effect = "Allow"
         Action = [
@@ -43,8 +39,6 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
         Resource = "${aws_sqs_queue.image_queue.arn}"
       },
-
-      # S3 permissions
       {
         Effect = "Allow"
         Action = [
