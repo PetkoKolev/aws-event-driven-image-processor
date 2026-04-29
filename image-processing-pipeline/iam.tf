@@ -50,6 +50,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
         Action = [
           "s3:GetObject",
           "s3:PutObject"
+          "s3.HeadObject"
         ]
         Resource = "${aws_s3_bucket.images.arn}/*"
       }

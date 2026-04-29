@@ -2,6 +2,7 @@ import json
 import boto3
 import uuid
 import os
+from botocore.exceptions import ClientError
 
 s3 = boto3.client("s3")
 
@@ -46,6 +47,22 @@ def lambda_handler(event, context):
             # Convert uploads/xyz.jpg → processed/resized-xyz.jpg
             filename = original_key.split("/")[-1]
             processed_key = f"processed/resized-{filename}"
+
+            # Check the processed file actually exists before generating a URL.
+            # Without this, S3 returns 403 on the presigned URL when the object
+            # isn't there yet, which the frontend can't distinguish from a real
+            # permissions error.
+            try:
+                s3.head_object(Bucket=BUCKET_NAME, Key=processed_key)
+            except ClientError as e:
+                error_code = e.response["Error"]["Code"]
+                if error_code in ("404", "NoSuchKey"):
+                    return {
+                        "statusCode": 404,
+                        "headers": {"Access-Control-Allow-Origin": "*"},
+                        "body": json.dumps({"error": "Not ready yet"})
+                    }
+                raise
 
             # Generate signed GET URL
             image_url = s3.generate_presigned_url(

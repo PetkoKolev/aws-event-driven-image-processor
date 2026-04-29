@@ -94,13 +94,10 @@
 
       async function checkImage() {
         try {
-          // ONLY send original key
           const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
           const imgData = await res.json();
 
-          // CRITICAL SAFETY CHECK
           if (!imgData.image_url) {
-            console.error("Bad image API response:", imgData);
             throw new Error("No image_url returned");
           }
 
@@ -109,16 +106,17 @@
           const testImg = new Image();
 
           testImg.onload = () => {
+            // ONLY mark success when it ACTUALLY loads
             processedImg.src = signedUrl;
             progressBar.style.width = "100%";
             status.innerText = "Completed";
           };
 
           testImg.onerror = () => {
-            throw new Error("Image not ready yet");
+            throw new Error("Still not accessible");
           };
 
-          testImg.src = signedUrl 
+          testImg.src = signedUrl;
 
         } catch (err) {
           attempts++;
@@ -132,7 +130,6 @@
           }
         }
       }
-
       checkImage();
     }
   </script>
