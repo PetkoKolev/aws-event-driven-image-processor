@@ -38,7 +38,7 @@ resource "aws_apigatewayv2_api" "api" {
   name          = "image-upload-api"
   protocol_type = "HTTP"
 
-  cors_configurstion {
+  cors_configuration {
     allow_origin = ["*"]
     allow_methods = ["GET", "POST", "OPTIONS"]
     allow_headers = ["content-type"]
