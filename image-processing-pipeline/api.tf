@@ -66,6 +66,16 @@ resource "aws_apigatewayv2_route" "upload" {
 }
 
 # =========================
+# Route (GET image)
+# =========================
+resource "aws_apigatewayv2_route" "get_image" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "GET /image"
+
+  target = "integrations/${aws_apigatewayv2_integration.api_lambda.id}"
+}
+
+# =========================
 # Stage
 # =========================
 resource "aws_apigatewayv2_stage" "default" {
