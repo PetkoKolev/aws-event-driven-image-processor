@@ -58,7 +58,7 @@
 
       progressBar.style.width = "10%";
 
-      // Step 1: Get presigned upload URL
+      // STEP 1: Get upload URL
       const res = await fetch(`${API_BASE}/upload`, {
         method: "POST",
         headers: {
@@ -67,9 +67,15 @@
       });
 
       const data = await res.json();
+
+      if (!data.upload_url || !data.file_key) {
+        console.error("Upload API broken:", data);
+        return alert("Upload API failed");
+      }
+
       progressBar.style.width = "30%";
 
-      // Step 2: Upload to S3
+      // STEP 2: Upload to S3
       await fetch(data.upload_url, {
         method: "PUT",
         headers: {
@@ -88,14 +94,15 @@
 
       async function checkImage() {
         try {
-          const fileName = fileKey.split("/")[1];
-          const fileId = fileName.split(".")[0];
-          const extension = fileName.split(".")[1];
-
-          const processedKey = `processed/resized-${fileId}.${extension}`;
-
+          // ✅ ONLY send original key
           const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
           const imgData = await res.json();
+
+          // 🔴 CRITICAL SAFETY CHECK
+          if (!imgData.image_url) {
+            console.error("Bad image API response:", imgData);
+            throw new Error("No image_url returned");
+          }
 
           const signedUrl = imgData.image_url;
 
@@ -108,7 +115,7 @@
           };
 
           testImg.onerror = () => {
-            throw new Error("Not ready yet");
+            throw new Error("Image not ready yet");
           };
 
           testImg.src = signedUrl + "&t=" + new Date().getTime();
@@ -121,6 +128,7 @@
             setTimeout(checkImage, 1500);
           } else {
             status.innerText = "Processing took too long";
+            console.error("Final failure:", err);
           }
         }
       }

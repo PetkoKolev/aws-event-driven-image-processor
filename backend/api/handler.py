@@ -52,7 +52,8 @@ def lambda_handler(event, context):
                 "get_object",
                 Params={
                     "Bucket": BUCKET_NAME,
-                    "Key": processed_key
+                    "Key": processed_key,
+                    "ResponseContentType": "image/jpeg"
                 },
                 ExpiresIn=3600
             )
