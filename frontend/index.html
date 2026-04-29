@@ -1,31 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Image Upload</title>
+
+  <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <h1>Upload Image</h1>
+  <div class="container">
+    <h1>Image Upload</h1>
 
-  <input type="file" id="fileInput" />
-  <button onclick="upload()">Upload</button>
+    <div class="upload-section">
+      <input type="file" id="fileInput" />
+      <button id="uploadBtn">Upload</button>
+    </div>
 
-  <h2>Original</h2>
-  <img id="original" width="300"/>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
 
-  <h2>Processed</h2>
-  <img id="processed" width="300"/>
+    <p id="status" class="status-text"></p>
+
+    <div class="images">
+      <div class="image-block">
+        <h2>Original</h2>
+        <img id="original" />
+      </div>
+
+      <div class="image-block">
+        <h2>Processed</h2>
+        <img id="processed" />
+      </div>
+    </div>
+  </div>
 
   <script>
     const API_URL = "https://3heztdwn22.execute-api.eu-west-2.amazonaws.com/upload";
+    const BUCKET_URL = "https://petko-image-upload-b0338c9b.s3.amazonaws.com";
+
+    document.getElementById("uploadBtn").addEventListener("click", upload);
 
     async function upload() {
       const file = document.getElementById("fileInput").files[0];
       if (!file) return alert("Pick a file");
 
-      // Show original preview
+      const status = document.getElementById("status");
+      const progressBar = document.getElementById("progressBar");
+      const processedImg = document.getElementById("processed");
+
+      progressBar.style.width = "0%";
+      status.innerText = "Starting upload...";
+      processedImg.src = "";
+
       document.getElementById("original").src = URL.createObjectURL(file);
 
-      // Step 1: get presigned URL
+      progressBar.style.width = "10%";
+
       const res = await fetch(API_URL, {
         method: "POST",
         headers: {
@@ -34,8 +66,8 @@
       });
 
       const data = await res.json();
+      progressBar.style.width = "30%";
 
-      // Step 2: upload to S3
       await fetch(data.upload_url, {
         method: "PUT",
         headers: {
@@ -44,15 +76,43 @@
         body: file
       });
 
-      // Step 3: show processed image (guess URL)
-      const processedUrl = data.upload_url
-        .split("?")[0]
-        .replace("/uploads/", "/processed/resized-");
+      progressBar.style.width = "60%";
+      status.innerText = "Processing image...";
 
-      // give Lambda a second to process
-      setTimeout(() => {
-        document.getElementById("processed").src = processedUrl;
-      }, 2000);
+      const fileKey = data.file_key;
+      const fileName = fileKey.split("/")[1];
+      const fileId = fileName.split(".")[0];
+      const extension = fileName.split(".")[1];
+
+      const processedUrl = `${BUCKET_URL}/processed/resized-${fileId}.${extension}`;
+
+      let attempts = 0;
+      const maxAttempts = 15;
+
+      function checkImage() {
+        const testImg = new Image();
+
+        testImg.onload = () => {
+          processedImg.src = processedUrl;
+          progressBar.style.width = "100%";
+          status.innerText = "Completed";
+        };
+
+        testImg.onerror = () => {
+          attempts++;
+          progressBar.style.width = `${60 + attempts * 2}%`;
+
+          if (attempts < maxAttempts) {
+            setTimeout(checkImage, 1000);
+          } else {
+            status.innerText = "Processing took too long";
+          }
+        };
+
+        testImg.src = processedUrl + "?t=" + new Date().getTime();
+      }
+
+      checkImage();
     }
   </script>
 </body>
