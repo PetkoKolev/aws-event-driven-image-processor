@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -37,91 +38,96 @@
   </div>
 
   <script>
-  const API_BASE = "https://3heztdwn22.execute-api.eu-west-2.amazonaws.com";
+    const API_BASE = "https://3heztdwn22.execute-api.eu-west-2.amazonaws.com";
 
-  document.getElementById("uploadBtn").addEventListener("click", upload);
+    document.getElementById("uploadBtn").addEventListener("click", upload);
 
-  async function upload() {
-    const file = document.getElementById("fileInput").files[0];
-    if (!file) return alert("Pick a file");
+    async function upload() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Pick a file");
 
-    const status = document.getElementById("status");
-    const progressBar = document.getElementById("progressBar");
-    const processedImg = document.getElementById("processed");
+      const status = document.getElementById("status");
+      const progressBar = document.getElementById("progressBar");
+      const processedImg = document.getElementById("processed");
 
-    progressBar.style.width = "0%";
-    status.innerText = "Starting upload...";
-    processedImg.src = "";
+      progressBar.style.width = "0%";
+      status.innerText = "Starting upload...";
+      processedImg.src = "";
 
-    document.getElementById("original").src = URL.createObjectURL(file);
+      document.getElementById("original").src = URL.createObjectURL(file);
 
-    progressBar.style.width = "10%";
+      progressBar.style.width = "10%";
 
-    // Step 1: Get presigned upload URL
-    const res = await fetch(`${API_BASE}/upload`, {
-      method: "POST",
-      headers: {
-        "Content-Type": file.type
-      }
-    });
+      // Step 1: Get presigned upload URL
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": file.type
+        }
+      });
 
-    const data = await res.json();
-    progressBar.style.width = "30%";
+      const data = await res.json();
+      progressBar.style.width = "30%";
 
-    // Step 2: Upload to S3
-    await fetch(data.upload_url, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type
-      },
-      body: file
-    });
+      // Step 2: Upload to S3
+      await fetch(data.upload_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type
+        },
+        body: file
+      });
 
-    progressBar.style.width = "60%";
-    status.innerText = "Processing image...";
+      progressBar.style.width = "60%";
+      status.innerText = "Processing image...";
 
-    const fileKey = data.file_key;
+      const fileKey = data.file_key;
 
-    let attempts = 0;
-    const maxAttempts = 15;
+      let attempts = 0;
+      const maxAttempts = 15;
 
-    async function checkImage() {
-      try {
-        // Step 3: Ask API for signed GET URL
-        const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
-        const imgData = await res.json();
+      async function checkImage() {
+        try {
+          const fileName = fileKey.split("/")[1];
+          const fileId = fileName.split(".")[0];
+          const extension = fileName.split(".")[1];
 
-        const signedUrl = imgData.image_url;
+          const processedKey = `processed/resized-${fileId}.${extension}`;
 
-        // Step 4: Test if image exists
-        const testImg = new Image();
+          const res = await fetch(`${API_BASE}/image?key=${processedKey}`);
+          const imgData = await res.json();
 
-        testImg.onload = () => {
-          processedImg.src = signedUrl;
-          progressBar.style.width = "100%";
-          status.innerText = "Completed";
-        };
+          const signedUrl = imgData.image_url;
 
-        testImg.onerror = () => {
-          throw new Error("Not ready yet");
-        };
+          const testImg = new Image();
 
-        testImg.src = signedUrl;
+          testImg.onload = () => {
+            processedImg.src = signedUrl;
+            progressBar.style.width = "100%";
+            status.innerText = "Completed";
+          };
 
-      } catch (err) {
-        attempts++;
-        progressBar.style.width = `${60 + attempts * 2}%`;
+          testImg.onerror = () => {
+            throw new Error("Not ready yet");
+          };
 
-        if (attempts < maxAttempts) {
-          setTimeout(checkImage, 1500);
-        } else {
-          status.innerText = "Processing took too long";
+          testImg.src = signedUrl + "&t=" + new Date().getTime();
+
+        } catch (err) {
+          attempts++;
+          progressBar.style.width = `${60 + attempts * 2}%`;
+
+          if (attempts < maxAttempts) {
+            setTimeout(checkImage, 1500);
+          } else {
+            status.innerText = "Processing took too long";
+          }
         }
       }
-    }
 
-    checkImage();
-  }
-</script>
+      checkImage();
+    }
+  </script>
 </body>
+
 </html>
