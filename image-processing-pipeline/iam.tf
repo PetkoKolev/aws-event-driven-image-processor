@@ -21,6 +21,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+
+      # CloudWatch Logs
       {
         Effect = "Allow"
         Action = [
@@ -30,6 +32,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
         Resource = "*"
       },
+
+      # SQS permissions
       {
         Effect = "Allow"
         Action = [
@@ -39,12 +43,13 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
         Resource = "${aws_sqs_queue.image_queue.arn}"
       },
+
+      # S3 permissions
       {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:PutObject",
-          "s3.HeadObject"
+          "s3:PutObject"
         ]
         Resource = "${aws_s3_bucket.images.arn}/*"
       }
