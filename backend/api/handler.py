@@ -12,8 +12,9 @@ ALLOWED_TYPES = ["image/jpeg", "image/png"]
 
 def lambda_handler(event, context):
     try:
-        method = event.get("requestContext", {}).get("http", {}).get("method")
-
+        method = event.get("requestContext", {}).get("http", {}).get("method") \
+            or event.get("httpMethod")
+            
         # =========================
         # HANDLE CORS PREFLIGHT
         # =========================
