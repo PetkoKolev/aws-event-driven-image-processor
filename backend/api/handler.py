@@ -86,7 +86,7 @@ def lambda_handler(event, context):
         # HANDLE POST (UPLOAD)
         # =========================
         headers = event.get("headers", {}) or {}
-        content_type = headers.get("content-type", "image/jpeg")
+        content_type = headers.get("content-type", "").split(";")[0]
 
         # Validate type
         if content_type not in ALLOWED_TYPES:
