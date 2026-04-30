@@ -91,10 +91,19 @@
 
       let attempts = 0;
       const maxAttempts = 15;
+      let finished = false; // NEW
 
       async function checkImage() {
+        if (finished) return; // STOP LOOP
+
         try {
           const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
+
+          // handle API not ready (404/500)
+          if (!res.ok) {
+            throw new Error(`API not ready (${res.status})`);
+          }
+
           const imgData = await res.json();
 
           if (!imgData.image_url) {
@@ -103,33 +112,32 @@
 
           const signedUrl = imgData.image_url;
 
-          const testImg = new Image();
-
-          testImg.onload = () => {
-            // ONLY mark success when it ACTUALLY loads
-            processedImg.src = signedUrl;
+          // wait for ACTUAL image load
+          processedImg.onload = () => {
+            finished = true; // 🔥 THIS FIXES YOUR ISSUE
             progressBar.style.width = "100%";
             status.innerText = "Completed";
           };
 
-          testImg.onerror = () => {
-            throw new Error("Still not accessible");
+          processedImg.onerror = () => {
+            throw new Error("Image not accessible yet");
           };
 
-          testImg.src = signedUrl;
+          processedImg.src = signedUrl;
 
         } catch (err) {
           attempts++;
           progressBar.style.width = `${60 + attempts * 2}%`;
 
-          if (attempts < maxAttempts) {
+          if (attempts < maxAttempts && !finished) {
             setTimeout(checkImage, 1500);
-          } else {
+          } else if (!finished) {
             status.innerText = "Processing took too long";
             console.error("Final failure:", err);
           }
         }
       }
+
       checkImage();
     }
   </script>
