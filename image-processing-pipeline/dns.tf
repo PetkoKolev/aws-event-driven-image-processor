@@ -14,7 +14,6 @@ resource "aws_route53_record" "frontend_cert_validation" {
   }
 
   zone_id = data.aws_route53_zone.main.zone_id
-
   name    = each.value.name
   type    = each.value.type
   ttl     = 60
@@ -30,4 +29,16 @@ resource "aws_acm_certificate_validation" "frontend" {
     for record in aws_route53_record.frontend_cert_validation :
     record.fqdn
   ]
+}
+
+resource "aws_route53_record" "frontend_alias" {
+  zone_id = data.aws_route53_zone.main.zone_id
+  name    = "ipp.petkokolev-cloud.com"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
+    evaluate_target_health = false
+  }
 }
