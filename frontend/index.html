@@ -10,41 +10,52 @@
 </head>
 
 <body>
-  <div class="upload-section">
-    <div id="dropZone" class="drop-zone">
-      <p>Drag & drop an image here or click to choose a file</p>
-      <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden />
+  <div class="container">
+    <h1>Image Upload</h1>
+
+    <div class="upload-card">
+
+      <div id="dropZone" class="drop-zone">
+        <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden />
+
+        <div class="drop-content">
+          <h3>Drop Your Files Here</h3>
+          <p>or click to choose an image</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <select id="modeSelect">
+          <option value="web">Web Optimized</option>
+          <option value="thumbnail">Thumbnail</option>
+          <option value="hq">High Quality</option>
+        </select>
+
+        <button id="uploadBtn">Upload</button>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <p id="status" class="status-text"></p>
+
+      <div class="images">
+        <div class="image-block">
+          <h2>Original</h2>
+          <img id="original" />
+        </div>
+
+        <div class="image-block">
+          <h2>Processed</h2>
+          <img id="processed" />
+          <button id="downloadBtn" style="display:none;">
+            Download Processed Image
+          </button>
+        </div>
+      </div>
+
     </div>
-
-    <select id="modeSelect">
-      <option value="web">Web Optimized</option>
-      <option value="thumbnail">Thumbnail</option>
-      <option value="hq">High Quality</option>
-    </select>
-
-    <button id="uploadBtn">Upload</button>
-  </div>
-
-  <div class="progress-container">
-    <div class="progress-bar" id="progressBar"></div>
-  </div>
-
-  <p id="status" class="status-text"></p>
-
-  <div class="images">
-    <div class="image-block">
-      <h2>Original</h2>
-      <img id="original" />
-    </div>
-
-    <div class="image-block">
-      <h2>Processed</h2>
-      <img id="processed" />
-      <button id="downloadBtn" style="display:none; margin-top:10px;">
-        Download Processed Image
-      </button>
-    </div>
-  </div>
   </div>
 
   <script>

@@ -19,12 +19,10 @@ h1 {
   margin-bottom: 25px;
 }
 
-.upload-section {
+.upload-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 20px;
 }
 
 button {
@@ -67,6 +65,7 @@ button:hover {
   display: flex;
   justify-content: space-between;
   gap: 20px;
+  flex-wrap: wrap;
 }
 
 .image-block {
@@ -83,10 +82,9 @@ img {
 
 .drop-zone {
   width: 100%;
-  max-width: 500px;
   border: 2px dashed #ccc;
-  border-radius: 10px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 50px 20px;
   text-align: center;
   cursor: pointer;
   background: #fafafa;
@@ -96,7 +94,7 @@ img {
 
 .drop-zone:hover {
   border-color: #007bff;
-  background: #f0f8ff;
+  background: #f5fbff;
 }
 
 .drop-zone.dragover {
@@ -105,8 +103,19 @@ img {
   transform: scale(1.01);
 }
 
-.drop-zone p {
+.drop-content h3 {
   margin: 0;
+  font-size: 24px;
+}
+
+.drop-content p {
+  margin-top: 8px;
   color: #666;
   font-size: 15px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
 }
