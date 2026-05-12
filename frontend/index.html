@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Image Upload</title>
-
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
   <div class="container">
     <h1>Image Upload</h1>
+    <p class="subtitle">Upload an image, optimize it with AWS Lambda, and download the result.</p>
 
     <div class="upload-card">
 
@@ -19,8 +18,9 @@
         <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden />
 
         <div class="drop-content">
-          <h3>Drop Your Files Here</h3>
-          <p>or click to choose an image</p>
+          <div class="upload-icon">☁️</div>
+          <h3>Drop Your Image Here</h3>
+          <p>or click to browse</p>
         </div>
       </div>
 
@@ -43,12 +43,23 @@
       <div class="images">
         <div class="image-block">
           <h2>Original</h2>
-          <img id="original" />
+          <div class="image-card">
+            <img id="original" />
+            <div id="originalPlaceholder" class="placeholder">
+              No image selected
+            </div>
+          </div>
         </div>
 
         <div class="image-block">
           <h2>Processed</h2>
-          <img id="processed" />
+          <div class="image-card">
+            <img id="processed" />
+            <div id="processedPlaceholder" class="placeholder">
+              Waiting for upload
+            </div>
+          </div>
+
           <button id="downloadBtn" style="display:none;">
             Download Processed Image
           </button>
@@ -61,10 +72,34 @@
   <script>
     const API_BASE = "https://3heztdwn22.execute-api.eu-west-2.amazonaws.com";
 
-    document.getElementById("uploadBtn").addEventListener("click", upload);
-
+    const uploadBtn = document.getElementById("uploadBtn");
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
+    const originalImg = document.getElementById("original");
+    const processedImg = document.getElementById("processed");
+    const originalPlaceholder = document.getElementById("originalPlaceholder");
+    const processedPlaceholder = document.getElementById("processedPlaceholder");
+
+    uploadBtn.addEventListener("click", upload);
+
+    function showPreview(file) {
+      if (!file) return;
+
+      const previewUrl = URL.createObjectURL(file);
+
+      originalImg.src = previewUrl;
+      originalImg.style.display = "block";
+      originalPlaceholder.style.display = "none";
+
+      processedImg.src = "";
+      processedImg.style.display = "none";
+      processedPlaceholder.style.display = "flex";
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      showPreview(file);
+    });
 
     dropZone.addEventListener("click", () => {
       fileInput.click();
@@ -87,29 +122,32 @@
 
       if (files.length > 0) {
         fileInput.files = files;
+        showPreview(files[0]);
       }
     });
 
     async function upload() {
       const file = fileInput.files[0];
       const mode = document.getElementById("modeSelect").value;
-      if (!file) return alert("Pick a file");
+
+      if (!file) {
+        alert("Pick a file");
+        return;
+      }
 
       const status = document.getElementById("status");
       const progressBar = document.getElementById("progressBar");
-      const processedImg = document.getElementById("processed");
       const downloadBtn = document.getElementById("downloadBtn");
 
       progressBar.style.width = "0%";
       status.innerText = "Starting upload...";
       processedImg.src = "";
+      processedImg.style.display = "none";
+      processedPlaceholder.style.display = "flex";
       downloadBtn.style.display = "none";
-
-      document.getElementById("original").src = URL.createObjectURL(file);
 
       progressBar.style.width = "10%";
 
-      // STEP 1: Get upload URL
       const res = await fetch(`${API_BASE}/upload?mode=${mode}`, {
         method: "POST",
         headers: {
@@ -120,13 +158,12 @@
       const data = await res.json();
 
       if (!data.upload_url || !data.file_key) {
-        console.error("Upload API broken:", data);
-        return alert("Upload API failed");
+        alert("Upload API failed");
+        return;
       }
 
       progressBar.style.width = "30%";
 
-      // STEP 2: Upload to S3
       await fetch(data.upload_url, {
         method: "PUT",
         headers: {
@@ -140,48 +177,38 @@
       status.innerText = "Processing image...";
 
       const fileKey = data.file_key;
-
       let attempts = 0;
       const maxAttempts = 30;
-      let finished = false; // NEW
+      let finished = false;
 
       async function checkImage() {
-        if (finished) return; // STOP LOOP
+        if (finished) return;
 
         try {
           const res = await fetch(`${API_BASE}/image?key=${fileKey}`);
 
-          // handle API not ready (404/500)
           if (res.status === 404) {
             attempts++;
-            progressBar.style.width = `${60 + attempts * 2}%`;
 
-            if (attempts < maxAttempts && !finished) {
+            if (attempts < maxAttempts) {
               setTimeout(checkImage, 1500);
             } else {
               status.innerText = "Processing took too long";
             }
+
             return;
           }
 
-          if (!res.ok) {
-            throw new Error(`Unexpected API error (${res.status})`);
-          }
-
           const imgData = await res.json();
-
-          if (!imgData.image_url) {
-            throw new Error("No image_url returned");
-          }
-
           const signedUrl = imgData.image_url;
 
-          // wait for ACTUAL image load
           processedImg.onload = () => {
             finished = true;
             progressBar.style.width = "100%";
             status.innerText = "Completed";
 
+            processedImg.style.display = "block";
+            processedPlaceholder.style.display = "none";
             downloadBtn.style.display = "inline-block";
 
             downloadBtn.onclick = () => {
@@ -191,24 +218,18 @@
               document.body.appendChild(a);
               a.click();
               a.remove();
-            }
-          };
-
-          processedImg.onerror = () => {
-            throw new Error("Image not accessible yet");
+            };
           };
 
           processedImg.src = signedUrl;
 
-        } catch (err) {
+        } catch {
           attempts++;
-          progressBar.style.width = `${60 + attempts * 2}%`;
 
-          if (attempts < maxAttempts && !finished) {
+          if (attempts < maxAttempts) {
             setTimeout(checkImage, 1500);
-          } else if (!finished) {
+          } else {
             status.innerText = "Processing took too long";
-            console.error("Final failure:", err);
           }
         }
       }
@@ -217,5 +238,4 @@
     }
   </script>
 </body>
-
 </html>
