@@ -3,7 +3,7 @@ import boto3
 import urllib.parse
 import io
 import os
-from PIL import Image
+from PIL import Image, ImageOps
 
 s3 = boto3.client("s3")
 
@@ -89,6 +89,10 @@ def process_s3_record(s3_record):
 
     try:
         image = Image.open(io.BytesIO(image_content))
+        
+        #EXIF orientation fix for phone/camera photos
+        image = ImageOps.exif_transpose(image)
+        
     except Exception:
         log("ERROR", "Invalid image file", key=key)
         return
