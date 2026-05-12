@@ -6,129 +6,139 @@ body {
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1050px;
   margin: auto;
   background: white;
   padding: 40px;
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  font-size: 48px;
 }
 
 .subtitle {
   text-align: center;
-  color: #666;
-  margin-bottom: 30px;
+  color: #64748b;
+  margin-bottom: 35px;
+  font-size: 16px;
 }
 
 .upload-card {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 30px;
 }
 
+/* DROP ZONE */
 .drop-zone {
-  border: 2px dashed #cbd5e1;
-  border-radius: 18px;
-  padding: 60px 20px;
-  text-align: center;
+  width: 100%;
+  min-height: 240px;
+  border: 3px dashed #cbd5e1;
+  border-radius: 20px;
+  background: #f8fafc;
   cursor: pointer;
-  background: #fafafa;
-  transition: all 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.25s ease;
+  box-sizing: border-box;
 }
 
 .drop-zone:hover {
   border-color: #3b82f6;
-  background: #f8fbff;
+  background: #eff6ff;
 }
 
 .drop-zone.dragover {
   border-color: #2563eb;
-  background: #eff6ff;
+  background: #dbeafe;
   transform: scale(1.01);
 }
 
+.drop-content {
+  text-align: center;
+}
+
 .upload-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+  font-size: 56px;
+  margin-bottom: 15px;
 }
 
 .drop-content h3 {
   margin: 0;
-  font-size: 28px;
+  font-size: 30px;
 }
 
 .drop-content p {
   margin-top: 10px;
-  color: #666;
+  font-size: 16px;
+  color: #64748b;
 }
 
+/* CONTROLS */
 .controls {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  align-items: center;
+  gap: 15px;
 }
 
-select,
-button {
-  padding: 12px 18px;
+select {
+  padding: 14px 18px;
+  border: 1px solid #d1d5db;
   border-radius: 10px;
-  border: none;
   font-size: 15px;
+  background: white;
 }
 
 button {
-  background: #007bff;
+  padding: 14px 24px;
+  border: none;
+  background: #2563eb;
   color: white;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: 0.2s ease;
 }
 
 button:hover {
-  background: #0056b3;
+  background: #1d4ed8;
 }
 
-.progress-container {
-  width: 100%;
-  background: #e5e7eb;
-  border-radius: 999px;
-  height: 12px;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  background: #22c55e;
-  transition: width 0.3s ease;
-}
-
-.status-text {
-  text-align: center;
-  color: #666;
-}
-
+/* IMAGE SECTIONS */
 .images {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 30px;
 }
 
-.image-block h2 {
+.image-block {
   text-align: center;
 }
 
+.image-block h2 {
+  margin-bottom: 16px;
+  font-size: 34px;
+}
+
 .image-card {
-  background: #fafafa;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  height: 360px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  height: 420px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   overflow: hidden;
   position: relative;
 }
@@ -142,17 +152,43 @@ img {
 
 .placeholder {
   color: #94a3b8;
-  font-size: 16px;
+  font-size: 18px;
+}
+
+/* BOTTOM SECTION */
+.bottom-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 18px;
+}
+
+.progress-container {
+  width: 70%;
+  background: #e2e8f0;
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #22c55e;
+  transition: width 0.3s ease;
+}
+
+.status-text {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
 }
 
 #downloadBtn {
-  margin-top: 16px;
-  width: 100%;
+  min-width: 260px;
 }
 
+/* MOBILE */
 @media (max-width: 768px) {
   .images {
     grid-template-columns: 1fr;
@@ -160,5 +196,17 @@ img {
 
   .controls {
     flex-direction: column;
+  }
+
+  .progress-container {
+    width: 100%;
+  }
+
+  h1 {
+    font-size: 36px;
+  }
+
+  .image-card {
+    height: 300px;
   }
 }
