@@ -15,6 +15,13 @@
 
     <div class="upload-section">
       <input type="file" id="fileInput" />
+
+      <select id="modeSelect">
+        <option value="web">Web Optimized</option>
+        <option value="thumbnail">Thumbnail</option>
+        <option value="hq">High Quality</option>
+      </select>
+
       <button id="uploadBtn">Upload</button>
     </div>
 
@@ -47,6 +54,7 @@
 
     async function upload() {
       const file = document.getElementById("fileInput").files[0];
+      const mode = document.getElementById("modeSelect").value;
       if (!file) return alert("Pick a file");
 
       const status = document.getElementById("status");
@@ -64,7 +72,7 @@
       progressBar.style.width = "10%";
 
       // STEP 1: Get upload URL
-      const res = await fetch(`${API_BASE}/upload`, {
+      const res = await fetch(`${API_BASE}/upload?mode=${mode}`, {
         method: "POST",
         headers: {
           "Content-Type": file.type
@@ -84,7 +92,8 @@
       await fetch(data.upload_url, {
         method: "PUT",
         headers: {
-          "Content-Type": file.type
+          "Content-Type": file.type,
+          "x-amz-meta-mode": mode
         },
         body: file
       });
@@ -116,7 +125,7 @@
             }
             return;
           }
-          
+
           if (!res.ok) {
             throw new Error(`Unexpected API error (${res.status})`);
           }
@@ -131,7 +140,7 @@
 
           // wait for ACTUAL image load
           processedImg.onload = () => {
-            finished = true; 
+            finished = true;
             progressBar.style.width = "100%";
             status.innerText = "Completed";
 
