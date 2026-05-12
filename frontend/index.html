@@ -9,63 +9,67 @@
 </head>
 
 <body>
-  <div class="container">
-    <h1>Image Upload</h1>
-    <p class="subtitle">
-      Upload an image, optimize it with AWS Lambda, and download the result.
-    </p>
+  <div class="page">
+    <div class="container">
+      <h1>Image Upload</h1>
 
-    <div class="upload-card">
+      <p class="subtitle">
+        Upload an image, optimize it with AWS Lambda, and download the result.
+      </p>
 
-      <div id="dropZone" class="drop-zone">
-        <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden />
-        <div class="drop-content">
-          <h3>Drop Your Image Here</h3>
+      <div class="upload-card">
+
+        <div id="dropZone" class="drop-zone">
+          <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden />
+          <div class="drop-content">
+            <h3>Drop Your Files Here</h3>
+          </div>
         </div>
-      </div>
 
-      <div class="controls">
-        <select id="modeSelect">
-          <option value="web">Web Optimized</option>
-          <option value="thumbnail">Thumbnail</option>
-          <option value="hq">High Quality</option>
-        </select>
+        <div class="controls">
+          <select id="modeSelect">
+            <option value="web">Web Optimized</option>
+            <option value="thumbnail">Thumbnail</option>
+            <option value="hq">High Quality</option>
+          </select>
 
-        <button id="uploadBtn">Upload</button>
-      </div>
+          <button id="uploadBtn">Upload</button>
+        </div>
 
-      <div class="images">
-        <div class="image-block">
-          <h2>Original</h2>
-          <div class="image-card">
-            <img id="original" />
-            <div id="originalPlaceholder" class="placeholder">
-              No image selected
+        <div class="images">
+          <div class="image-block">
+            <h2>Original</h2>
+            <div class="image-card">
+              <img id="original" />
+              <div id="originalPlaceholder" class="placeholder">
+                No image selected
+              </div>
+            </div>
+          </div>
+
+          <div class="image-block">
+            <h2>Processed</h2>
+            <div class="image-card">
+              <img id="processed" />
+              <div id="processedPlaceholder" class="placeholder">
+                Waiting for upload
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="image-block">
-          <h2>Processed</h2>
-          <div class="image-card">
-            <img id="processed" />
-            <div id="processedPlaceholder" class="placeholder">
-              Waiting for upload
-            </div>
+        <div class="bottom-actions">
+          <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
           </div>
+
+          <p id="status" class="status-text"></p>
+
+          <button id="downloadBtn" style="display:none;">
+            Download
+          </button>
         </div>
-      </div>
 
-      <div class="bottom-actions">
-        <div class="progress-container">
-          <div class="progress-bar" id="progressBar"></div>
-        </div>
-
-        <p id="status" class="status-text"></p>
-
-        <button id="downloadBtn" style="display:none;">
-          Download Processed Image
-        </button>
       </div>
     </div>
   </div>
