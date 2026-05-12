@@ -9,6 +9,7 @@ s3 = boto3.client("s3")
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 ALLOWED_TYPES = ["image/jpeg", "image/png"]
+ALLOWED_MODES = ["thumbnail", "web", "hq"]
 
 
 def lambda_handler(event, context):
@@ -87,6 +88,8 @@ def lambda_handler(event, context):
         # HANDLE POST (UPLOAD)
         # =========================
         headers = event.get("headers", {}) or {}
+        params = event.get("queryStringParameters") or {}
+        mode = params.get("mode", "web")
         content_type = (
             headers.get("content-type")
             or headers.get("Content-Type")
@@ -99,6 +102,13 @@ def lambda_handler(event, context):
                 "statusCode": 400,
                 "headers": {"Access-Control-Allow-Origin": "*"},
                 "body": json.dumps({"error": "Invalid file type"})
+            }
+            
+        if mode not in ALLOWED_MODES:
+            return {
+                "statusCode": 400,
+                "headers": {"Access-Control-Allow-Origin": "*"},
+                "body": json.dumps({"error": "Invalid processing mode"})
             }
 
         # Determine extension
@@ -115,7 +125,10 @@ def lambda_handler(event, context):
             Params={
                 "Bucket": BUCKET_NAME,
                 "Key": file_key,
-                "ContentType": content_type
+                "ContentType": content_type,
+                "Metadata": {
+                    "mode": mode
+                }
             },
             ExpiresIn=300
         )
