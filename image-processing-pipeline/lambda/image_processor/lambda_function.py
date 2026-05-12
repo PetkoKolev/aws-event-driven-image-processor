@@ -8,7 +8,20 @@ from PIL import Image
 s3 = boto3.client("s3")
 
 SUPPORTED_FORMATS = ["jpg", "jpeg", "png"]
-MAX_SIZE = 1024  # improved from 300
+PROCESSING_MODES = {
+    "thumbnail": {
+        "size": (300, 300),
+        "jpg_quality": 65
+    },
+    "web": {
+        "size": (1200, 1200),
+        "jpg_quality": 85
+    },
+    "hq": {
+        "size": (2400, 2400),
+        "jpg_quality": 95
+    }
+}
 
 
 def log(level, message, **kwargs):
@@ -63,6 +76,16 @@ def process_s3_record(s3_record):
 
     response = s3.get_object(Bucket=bucket, Key=key)
     image_content = response["Body"].read()
+    
+    metadata = response.get("Metadata", {})
+    mode = metadata.get("mode", "web")
+    
+    if mode not in PROCESSING_MODES:
+        mode = "web"
+        
+    settings = PROCESSING_MODES[mode]
+    
+    log("INFO", "Processing mode selected", mode=mode)
 
     try:
         image = Image.open(io.BytesIO(image_content))
@@ -72,14 +95,14 @@ def process_s3_record(s3_record):
 
     original_size = len(image_content)
 
-    # Resize properly
-    image.thumbnail((MAX_SIZE, MAX_SIZE))
+    # Resize according to selected mode
+    image.thumbnail(settings["size"])
 
     buffer = io.BytesIO()
 
     if ext in ["jpg", "jpeg"]:
         image = image.convert("RGB")
-        image.save(buffer, format="JPEG", quality=85, optimize=True)
+        image.save(buffer, format="JPEG", quality=settings["jpg_quality"], optimize=True)
         content_type = "image/jpeg"
         new_ext = "jpg"
 
