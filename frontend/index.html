@@ -10,41 +10,41 @@
 </head>
 
 <body>
-  <div class="container">
-    <h1>Image Upload</h1>
-
-    <div class="upload-section">
-      <input type="file" id="fileInput" />
-
-      <select id="modeSelect">
-        <option value="web">Web Optimized</option>
-        <option value="thumbnail">Thumbnail</option>
-        <option value="hq">High Quality</option>
-      </select>
-
-      <button id="uploadBtn">Upload</button>
+  <div class="upload-section">
+    <div id="dropZone" class="drop-zone">
+      <p>Drag & drop an image here or click to choose a file</p>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden />
     </div>
 
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
+    <select id="modeSelect">
+      <option value="web">Web Optimized</option>
+      <option value="thumbnail">Thumbnail</option>
+      <option value="hq">High Quality</option>
+    </select>
+
+    <button id="uploadBtn">Upload</button>
+  </div>
+
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <p id="status" class="status-text"></p>
+
+  <div class="images">
+    <div class="image-block">
+      <h2>Original</h2>
+      <img id="original" />
     </div>
 
-    <p id="status" class="status-text"></p>
-
-    <div class="images">
-      <div class="image-block">
-        <h2>Original</h2>
-        <img id="original" />
-      </div>
-
-      <div class="image-block">
-        <h2>Processed</h2>
-        <img id="processed" />
-        <button id="downloadBtn" style="display:none; margin-top:10px;">
-          Download Processed Image
-        </button>
-      </div>
+    <div class="image-block">
+      <h2>Processed</h2>
+      <img id="processed" />
+      <button id="downloadBtn" style="display:none; margin-top:10px;">
+        Download Processed Image
+      </button>
     </div>
+  </div>
   </div>
 
   <script>
@@ -52,8 +52,35 @@
 
     document.getElementById("uploadBtn").addEventListener("click", upload);
 
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+
+    dropZone.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+
+      const files = e.dataTransfer.files;
+
+      if (files.length > 0) {
+        fileInput.files = files;
+      }
+    });
+
     async function upload() {
-      const file = document.getElementById("fileInput").files[0];
+      const file = fileInput.files[0];
       const mode = document.getElementById("modeSelect").value;
       if (!file) return alert("Pick a file");
 
