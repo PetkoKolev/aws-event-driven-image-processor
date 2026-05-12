@@ -18,8 +18,8 @@ PROCESSING_MODES = {
         "jpg_quality": 85
     },
     "hq": {
-        "size": (2400, 2400),
-        "jpg_quality": 95
+        "size": (1800, 1800),
+        "jpg_quality": 90
     }
 }
 
