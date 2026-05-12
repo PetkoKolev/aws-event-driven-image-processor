@@ -70,6 +70,7 @@ def lambda_handler(event, context):
                 Params={
                     "Bucket": BUCKET_NAME,
                     "Key": processed_key,
+                    "ResponseContentDisposition": f'attachment; filename="processed-(filename)"'
                 },
                 ExpiresIn=3600
             )
