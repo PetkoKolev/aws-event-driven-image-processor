@@ -56,7 +56,7 @@ def lambda_handler(event, context):
                 s3.head_object(Bucket=BUCKET_NAME, Key=processed_key)
             except ClientError as e:
                 error_code = e.response["Error"]["Code"]
-                if error_code in ("404", "NoSuchKey"):
+                if error_code in ("404", "NoSuchKey", "403", "AccessDenied"):
                     return {
                         "statusCode": 404,
                         "headers": {"Access-Control-Allow-Origin": "*"},
