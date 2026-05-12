@@ -33,6 +33,9 @@
       <div class="image-block">
         <h2>Processed</h2>
         <img id="processed" />
+        <button id="downloadBtn" style="display:none; margin-top:10px;">
+          Download Processed Image
+        </button>
       </div>
     </div>
   </div>
@@ -49,10 +52,12 @@
       const status = document.getElementById("status");
       const progressBar = document.getElementById("progressBar");
       const processedImg = document.getElementById("processed");
+      const downloadBtn = document.getElementById("downloadBtn");
 
       progressBar.style.width = "0%";
       status.innerText = "Starting upload...";
       processedImg.src = "";
+      downloadBtn.style.display = "none";
 
       document.getElementById("original").src = URL.createObjectURL(file);
 
@@ -102,7 +107,7 @@
           // handle API not ready (404/500)
           if (res.status === 404) {
             attempts++;
-            progressBar.style.width = '${60 + attempts * 2}%';
+            progressBar.style.width = `${60 + attempts * 2}%`;
 
             if (attempts < maxAttempts && !finished) {
               setTimeout(checkImage, 1500);
@@ -129,6 +134,17 @@
             finished = true; 
             progressBar.style.width = "100%";
             status.innerText = "Completed";
+
+            downloadBtn.style.display = "inline-block";
+
+            downloadBtn.onclick = () => {
+              const a = document.createElement("a");
+              a.href = signedUrl;
+              a.download = "processed-image.jpg";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }
           };
 
           processedImg.onerror = () => {
