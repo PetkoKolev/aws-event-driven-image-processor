@@ -26,6 +26,7 @@ resource "aws_cloudwatch_metric_alarm" "image_processor_errors" {
   period              = 60
   statistic           = "Sum"
   threshold           = 1
+  treat_missing_data  = "notBreaching"
   alarm_description   = "Alarm when image processor Lambda errors"
 
   dimensions = {
@@ -49,6 +50,7 @@ resource "aws_cloudwatch_metric_alarm" "api_errors" {
   period              = 60
   statistic           = "Sum"
   threshold           = 1
+  treat_missing_data  = "notBreaching"
   alarm_description   = "Alarm when API Lambda errors"
 
   dimensions = {
@@ -72,6 +74,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_messages" {
   period              = 60
   statistic           = "Maximum"
   threshold           = 1
+  treat_missing_data  = "notBreaching"
   alarm_description   = "Alarm when DLQ contains failed messages"
 
   dimensions = {
