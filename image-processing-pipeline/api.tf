@@ -10,7 +10,7 @@ resource "aws_lambda_function" "api" {
   handler = "handler.lambda_handler"
   runtime = "python3.11"
 
-  role = aws_iam_role.lambda_role.arn
+  role = aws_iam_role.api_lambda_role.arn
 
   timeout = 10
 

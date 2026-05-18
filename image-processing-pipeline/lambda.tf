@@ -10,7 +10,7 @@ resource "aws_lambda_function" "image_processor" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.11"
 
-  role = aws_iam_role.lambda_role.arn
+  role = aws_iam_role.processor_lambda_role.arn
 
   timeout = 30
   memory_size = 1024
@@ -28,7 +28,7 @@ resource "aws_lambda_function" "dlq_reprocessor" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.11"
 
-  role = aws_iam_role.lambda_role.arn
+  role = aws_iam_role.dlq_lambda_role.arn
 
   timeout = 10
 }
