@@ -85,3 +85,89 @@ resource "aws_cloudwatch_metric_alarm" "dlq_messages" {
     aws_sns_topic.alerts.arn
   ]
 }
+
+# =========================
+# CloudWatch Dashboard
+# =========================
+resource "aws_cloudwatch_dashboard" "image_pipeline_dashboard" {
+  dashboard_name = "image-processing-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          title  = "API Lambda"
+          region = "eu-west-2"
+          stat   = "Sum"
+          period = 300
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.api.function_name],
+            [".", "Errors", ".", "."]
+          ]
+        }
+      },
+
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          title  = "Image Processor Lambda"
+          region = "eu-west-2"
+          stat   = "Sum"
+          period = 300
+          metrics = [
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.image_processor.function_name],
+            [".", "Errors", ".", "."]
+          ]
+        }
+      },
+
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          title  = "Image Processor Duration"
+          region = "eu-west-2"
+          stat   = "Average"
+          period = 300
+          metrics = [
+            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.image_processor.function_name]
+          ]
+        }
+      },
+
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          title  = "Queue Health"
+          region = "eu-west-2"
+          stat   = "Average"
+          period = 300
+          metrics = [
+            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.image_processing_queue.name],
+            [".", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.dlq.name]
+          ]
+        }
+      }
+    ]
+  })
+}
