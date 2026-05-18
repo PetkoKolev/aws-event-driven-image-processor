@@ -39,9 +39,10 @@ resource "aws_apigatewayv2_api" "api" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = ["*"]
+    allow_origins = ["https://ipp.petkokolev-cloud.com"]
     allow_methods = ["GET", "POST", "OPTIONS"]
     allow_headers = ["content-type"]
+    max_age       = 300
   }
 }
 

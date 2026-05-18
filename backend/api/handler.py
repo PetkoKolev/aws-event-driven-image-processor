@@ -6,17 +6,32 @@ from botocore.exceptions import ClientError
 
 s3 = boto3.client("s3")
 
-BUCKET_NAME = os.environ.get("BUCKET_NAME")
+BUCKET_NAME = os.environ["BUCKET_NAME"]
 
-ALLOWED_TYPES = ["image/jpeg", "image/png"]
-ALLOWED_MODES = ["thumbnail", "web", "hq"]
+ALLOWED_TYPES = {"image/jpeg", "image/png"}
+ALLOWED_MODES = {"thumbnail", "web", "hq"}
+
+
+def build_response(status_code, body):
+    return {
+        "statusCode": status_code,
+        "headers": {
+            "Access-Control-Allow-Origin": "https://ipp.petkokolev-cloud.com",
+            "Content-Type": "application/json"
+        },
+        "body": json.dumps(body)
+    }
 
 
 def lambda_handler(event, context):
     try:
-        method = event.get("requestContext", {}).get("http", {}).get("method") \
+        method = (
+            event.get("requestContext", {})
+            .get("http", {})
+            .get("method")
             or event.get("httpMethod")
-            
+        )
+
         # =========================
         # HANDLE CORS PREFLIGHT
         # =========================
@@ -24,7 +39,7 @@ def lambda_handler(event, context):
             return {
                 "statusCode": 200,
                 "headers": {
-                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Origin": "https://ipp.petkokolev-cloud.com",
                     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
                     "Access-Control-Allow-Headers": "Content-Type"
                 },
@@ -39,33 +54,25 @@ def lambda_handler(event, context):
             original_key = params.get("key")
 
             if not original_key:
-                return {
-                    "statusCode": 400,
-                    "headers": {"Access-Control-Allow-Origin": "*"},
-                    "body": json.dumps({"error": "Missing key"})
-                }
+                return build_response(400, {"error": "Missing key"})
 
-            # Convert uploads/xyz.jpg → processed/resized-xyz.jpg
             filename = original_key.split("/")[-1]
             processed_key = f"processed/resized-{filename}"
 
-            # Check the processed file actually exists before generating a URL.
-            # Without this, S3 returns 403 on the presigned URL when the object
-            # isn't there yet, which the frontend can't distinguish from a real
-            # permissions error.
             try:
-                s3.head_object(Bucket=BUCKET_NAME, Key=processed_key)
+                s3.head_object(
+                    Bucket=BUCKET_NAME,
+                    Key=processed_key
+                )
+
             except ClientError as e:
                 error_code = e.response["Error"]["Code"]
+
                 if error_code in ("404", "NoSuchKey", "403", "AccessDenied"):
-                    return {
-                        "statusCode": 404,
-                        "headers": {"Access-Control-Allow-Origin": "*"},
-                        "body": json.dumps({"error": "Not ready yet"})
-                    }
+                    return build_response(404, {"error": "Not ready yet"})
+
                 raise
 
-            # Generate signed GET URL
             image_url = s3.generate_presigned_url(
                 "get_object",
                 Params={
@@ -76,46 +83,35 @@ def lambda_handler(event, context):
                 ExpiresIn=3600
             )
 
-            return {
-                "statusCode": 200,
-                "headers": {"Access-Control-Allow-Origin": "*"},
-                "body": json.dumps({
-                    "image_url": image_url
-                })
-            }
+            return build_response(200, {
+                "image_url": image_url
+            })
 
         # =========================
         # HANDLE POST (UPLOAD)
         # =========================
         headers = event.get("headers", {}) or {}
         params = event.get("queryStringParameters") or {}
+
         mode = params.get("mode", "web")
+
         content_type = (
             headers.get("content-type")
             or headers.get("Content-Type")
             or ""
         ).split(";")[0]
 
-        # Validate type
         if content_type not in ALLOWED_TYPES:
-            return {
-                "statusCode": 400,
-                "headers": {"Access-Control-Allow-Origin": "*"},
-                "body": json.dumps({"error": "Invalid file type"})
-            }
-            
-        if mode not in ALLOWED_MODES:
-            return {
-                "statusCode": 400,
-                "headers": {"Access-Control-Allow-Origin": "*"},
-                "body": json.dumps({"error": "Invalid processing mode"})
-            }
+            return build_response(400, {
+                "error": "Invalid file type. Only JPEG and PNG are allowed."
+            })
 
-        # Determine extension
-        if content_type == "image/png":
-            extension = "png"
-        else:
-            extension = "jpg"
+        if mode not in ALLOWED_MODES:
+            return build_response(400, {
+                "error": "Invalid processing mode."
+            })
+
+        extension = "png" if content_type == "image/png" else "jpg"
 
         file_id = str(uuid.uuid4())
         file_key = f"uploads/{file_id}.{extension}"
@@ -133,18 +129,14 @@ def lambda_handler(event, context):
             ExpiresIn=300
         )
 
-        return {
-            "statusCode": 200,
-            "headers": {"Access-Control-Allow-Origin": "*"},
-            "body": json.dumps({
-                "upload_url": upload_url,
-                "file_key": file_key
-            })
-        }
+        return build_response(200, {
+            "upload_url": upload_url,
+            "file_key": file_key
+        })
 
     except Exception as e:
-        return {
-            "statusCode": 500,
-            "headers": {"Access-Control-Allow-Origin": "*"},
-            "body": json.dumps({"error": str(e)})
-        }
+        print(f"API error: {str(e)}")
+
+        return build_response(500, {
+            "error": "Internal server error"
+        })

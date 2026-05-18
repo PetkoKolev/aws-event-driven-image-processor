@@ -25,7 +25,7 @@ resource "aws_s3_bucket_cors_configuration" "images_cors" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST"]
-    allowed_origins = ["*"]
+    allowed_origins = ["https://ipp.petkokolev-cloud.com"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
