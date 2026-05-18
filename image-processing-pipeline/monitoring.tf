@@ -165,7 +165,7 @@ resource "aws_cloudwatch_dashboard" "image_pipeline_dashboard" {
           metrics = [
             ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.image_queue.name],
             [".", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.dlq.name]
-        ]
+          ]
         }
       }
     ]
