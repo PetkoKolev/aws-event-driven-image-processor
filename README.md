@@ -1,6 +1,6 @@
 # AWS Event-Driven Image Processing Platform
 
-Production-style serverless image processing platform built on AWS using event-driven architecture, Infrastructure as Code, and CI/CD automation.
+Production-style serverless image processing platform built on AWS to demonstrate real-world cloud engineering skills including event-driven architecture, Infrastructure as Code, CI/CD automation, observability, and operational resilience.
 
 ## Live Demo
 
@@ -9,21 +9,23 @@ https://ipp.petkokolev-cloud.com
 
 ---
 
-## Overview
+## Project Overview
 
-This project evolved from a simple event-driven image processor into a production-style serverless web application.
+This project began as a simple image processing concept and evolved into a production-style cloud engineering portfolio project designed to demonstrate practical AWS architecture and DevOps capability beyond beginner projects.
 
-Users can upload images through a browser UI, which are processed asynchronously by AWS services and returned as optimised outputs.
+Users upload an image through a browser-based frontend, which is processed asynchronously by an event-driven AWS backend and returned as an optimized downloadable result.
 
-Key engineering concepts demonstrated:
+This project demonstrates:
 
-- Event-driven architecture
+- Event-driven serverless architecture
 - Asynchronous distributed processing
-- Serverless backend APIs
-- Infrastructure as Code (Terraform)
-- CI/CD automation with GitHub Actions
-- HTTPS delivery with custom domain
-- AWS service integration and IAM permissions debugging
+- API-driven cloud application design
+- Infrastructure as Code with Terraform
+- Automated CI/CD deployment with GitHub Actions
+- Cloud monitoring and alerting with CloudWatch + SNS
+- Operational resilience with SQS + Dead Letter Queue handling
+- IAM least-privilege design
+- Production-style HTTPS hosting with CloudFront + Route 53
 
 ---
 
@@ -32,7 +34,7 @@ Key engineering concepts demonstrated:
 ```mermaid
 flowchart LR
 
-    User[User Browser]
+    USER[User Browser]
 
     CF[CloudFront CDN]
     FE[S3 Frontend Hosting]
@@ -48,15 +50,19 @@ flowchart LR
     WORKER[Image Processor Lambda]
     DLQREP[DLQ Reprocessor Lambda]
 
+    CW[CloudWatch Monitoring]
+    SNS[SNS Email Alerts]
+
     R53[Route 53]
-    ACM[ACM HTTPS Certificate]
+    ACM[ACM TLS Certificate]
 
     GHA[GitHub Actions CI/CD]
     TF[Terraform]
 
-    User --> CF
+    USER --> CF
     CF --> FE
-    User --> APIGW
+
+    USER --> APIGW
     APIGW --> API
     API --> S3
 
@@ -67,6 +73,11 @@ flowchart LR
     SQS --> DLQ
     DLQ --> DLQREP
 
+    WORKER --> CW
+    API --> CW
+    DLQ --> CW
+    CW --> SNS
+
     R53 --> CF
     ACM --> CF
 
@@ -76,67 +87,96 @@ flowchart LR
 
 ---
 
-## How It Works
+## Application Features
 
-### Frontend Flow
+### Frontend
 
-1. User visits:
+- Drag-and-drop image uploads
+- Click-to-upload file selection
+- Instant original image preview
+- Processed image preview after backend completion
+- Upload progress indicator
+- Status updates during processing
+- Download processed image button
+- Responsive browser UI
 
-https://ipp.petkokolev-cloud.com
+### Supported File Types
 
-2. Static frontend is served from:
+- JPG / JPEG
+- PNG
 
-- S3
-- CloudFront CDN
-- HTTPS via ACM
-- Route 53 custom DNS
+### Processing Modes
 
-3. User selects an image and clicks upload.
+- **Web Optimized** — compressed output for web delivery
+- **Thumbnail** — resized image output
+- **High Quality** — minimal compression output
+
+### Additional Processing Features
+
+- EXIF orientation correction for mobile uploads
+- Original file format preservation where appropriate
 
 ---
 
-### Upload API Flow
+## How It Works
 
-Frontend sends request to API Gateway:
+### 1. Frontend Delivery
+
+The static frontend is hosted on S3 and distributed globally through CloudFront with HTTPS enabled via ACM and Route 53 custom DNS.
+
+User access flow:
+
+```text
+Browser → CloudFront → S3 frontend
+```
+
+---
+
+### 2. Upload API Flow
+
+The frontend requests a presigned upload URL from API Gateway:
 
 ```text
 POST /upload
 ```
 
-API Lambda:
+The API Lambda:
 
-- detects content type
-- generates presigned S3 upload URL
-- returns:
-  - upload URL
-  - object key
+- validates file content type
+- validates requested processing mode
+- generates a presigned S3 upload URL
+- returns the upload URL + generated object key
 
-Frontend uploads directly to S3.
+The browser uploads directly to S3.
 
-This avoids routing file data through Lambda.
+This design avoids routing binary payloads through Lambda, improving scalability and reducing cost.
 
 ---
 
-### Event Processing Flow
+### 3. Event-Driven Processing
 
-1. Image lands in:
+Uploaded images land in:
 
 ```text
 uploads/
 ```
 
-2. S3 emits event notification
+Flow:
 
-3. Event sent to SQS
+```text
+S3 Object Created Event
+→ SQS Queue
+→ Image Processor Lambda
+```
 
-4. Worker Lambda polls SQS
+The processing Lambda:
 
-5. Worker:
-
-- downloads original image
-- processes/compresses image
-- preserves correct file type
-- writes output to:
+- downloads the uploaded image
+- reads EXIF metadata
+- corrects orientation if required
+- detects processing mode
+- applies Pillow transformations
+- uploads processed output to:
 
 ```text
 processed/
@@ -144,102 +184,121 @@ processed/
 
 ---
 
-### Retrieval Flow
+### 4. Retrieval Flow
 
-Frontend polls API until processed image becomes available.
+The frontend polls:
 
-API returns presigned access URL for the processed object.
+```text
+GET /image
+```
 
----
+The API Lambda:
 
-## Architecture Decisions
+- checks if processed output exists
+- generates a presigned download URL
+- returns the signed URL
 
-### uploads/ vs processed/
-
-Separate prefixes prevent recursive triggering.
-
-Without this separation:
-
-- processed images would trigger S3 events
-- Lambda would process its own outputs
-- infinite loop risk
-- potential runaway AWS costs
-
-AWS billing alerts during testing helped validate this safeguard.
+The frontend renders the processed image preview and enables download.
 
 ---
 
-### Presigned Uploads
+## Engineering Decisions
 
-Instead of uploading through API Gateway/Lambda:
+### Direct Browser Uploads via Presigned URLs
 
-- browser uploads directly to S3
+Instead of uploading files through API Gateway/Lambda:
+
+```text
+Browser → API → Lambda → S3
+```
+
+this project uses:
+
+```text
+Browser → S3
+```
 
 Benefits:
 
-- cheaper
-- faster
-- avoids Lambda payload limits
-- better scalability
+- lower cost
+- reduced Lambda execution time
+- avoids payload size limitations
+- improved scalability
+- cleaner separation of responsibilities
 
 ---
 
-### CloudFront + Custom Domain
+### Event-Driven Async Processing
 
-Frontend is production-hosted using:
+Processing is decoupled from upload requests using SQS.
 
-- CloudFront CDN
-- ACM-managed TLS
-- Route 53 DNS
+Benefits:
 
-This replaces local development-only hosting.
-
----
-
-### DLQ Pattern
-
-Failed queue messages route to Dead Letter Queue.
-
-Separate Lambda can reprocess failures.
-
-Demonstrates resilience patterns used in production systems.
+- absorbs burst traffic
+- improves resilience
+- isolates failures
+- supports retries
+- reflects real cloud-native architecture patterns
 
 ---
 
-## Project Structure
+### uploads/ vs processed/ Prefix Separation
 
-```bash
-backend/
-├── api/
-│   └── handler.py
-├── worker/
-│   └── worker.py
+Separate prefixes prevent recursive processing loops.
 
-frontend/
-├── index.html
-└── styles.css
+Without this:
 
-image-processing-pipeline/
-├── lambda/
-│   ├── image_processor/
-│   │   ├── lambda_function.py
-│   │   └── requirements.txt
-│   └── dlq_reprocessor/
-│       └── lambda_function.py
-├── acm.tf
-├── api.tf
-├── dns.tf
-├── frontend.tf
-├── iam.tf
-├── lambda.tf
-├── provider.tf
-├── s3.tf
-└── sqs.tf
+- processed images could retrigger S3 events
+- Lambda could process its own outputs
+- infinite execution loops could occur
+- AWS costs could spike unexpectedly
 
-.github/
-└── workflows/
-    └── deploy.yml
+---
+
+### Dead Letter Queue Pattern
+
+Failed queue messages are routed to a DLQ after retry exhaustion.
+
+Benefits:
+
+- failure isolation
+- safer async processing
+- operational visibility
+- reprocessing capability
+
+---
+
+### Least-Privilege IAM Roles
+
+Rather than using a shared Lambda execution role, each function has a dedicated IAM role with scoped permissions.
+
+Examples:
+
+- API Lambda → S3 + logging
+- Image processor → SQS + S3 + logging
+- DLQ reprocessor → SQS + requeue + logging
+
+This better reflects production security practices.
+
+---
+
+## Monitoring & Alerting
+
+Operational monitoring is implemented using CloudWatch and SNS.
+
+Current alerts:
+
+- Image processor Lambda errors
+- API Lambda errors
+- DLQ message accumulation
+
+Alert flow:
+
+```text
+CloudWatch Alarm → SNS Topic → Email Notification
 ```
+
+This enables proactive operational visibility rather than reactive debugging.
 
 ---
 
@@ -247,158 +306,185 @@ image-processing-pipeline/
 
 Provisioned entirely using Terraform.
 
-Resources include:
+AWS resources include:
 
-- S3 image storage bucket
-- S3 frontend hosting bucket
+- S3 (frontend hosting)
+- S3 (image storage)
 - API Gateway HTTP API
-- Upload API Lambda
-- Image processing Lambda
-- DLQ reprocessor Lambda
-- SQS queue
+- Lambda (upload API)
+- Lambda (image processor)
+- Lambda (DLQ reprocessor)
+- SQS processing queue
 - Dead Letter Queue
-- IAM roles/policies
-- ACM certificate
-- CloudFront distribution
-- Route 53 DNS records
+- IAM roles and policies
+- CloudFront CDN
+- Route 53 DNS
+- ACM TLS certificate
+- CloudWatch alarms
+- SNS notifications
+- Terraform remote state backend
+- DynamoDB Terraform locking
 
 ---
 
 ## CI/CD
 
-GitHub Actions automatically deploys on push to main.
+Deployment is automated using GitHub Actions.
 
-Pipeline:
+Pipeline steps:
 
-- builds Lambda deployment packages
-- installs Lambda-compatible dependencies using Docker
-- zips functions
-- runs Terraform
-- updates infrastructure
-- uploads frontend assets to S3
+- checkout repository
+- build Lambda deployment packages
+- build Lambda-compatible Pillow dependencies via Docker
+- package API Lambda
+- Terraform infrastructure deployment
+- frontend deployment to S3
+
+Pushes to:
+
+```text
+main
+```
+
+automatically deploy changes.
 
 ---
 
-## Challenges & Solutions
+## Challenges Solved
 
-### Lambda Dependency Compatibility
+### Lambda Native Dependency Compatibility
 
 Problem:
 
-Pillow failed with:
-
 ```text
-_imaging import error
+_imaging import errors
 ```
 
 Cause:
 
-Dependencies built on macOS rather than Lambda Linux runtime.
+Dependencies built locally on macOS instead of Lambda-compatible Linux runtime.
 
 Solution:
 
-Used Lambda Docker base image:
+Dockerized dependency builds using:
 
-```bash
+```text
 public.ecr.aws/lambda/python:3.11
 ```
 
-to package dependencies.
+---
+
+### IAM Permission Debugging
+
+Challenges encountered with:
+
+- Lambda execution permissions
+- Route 53 validation access
+- ACM validation
+- Terraform deployment permissions
+- CloudWatch/SNS deployment permissions
+
+Resolved through iterative IAM debugging and policy refinement.
 
 ---
 
-### AWS IAM Permission Debugging
+### CloudFront Certificate Region Constraint
 
-Terraform deployments initially failed due to insufficient permissions for:
-
-- ACM
-- Route 53
-- certificate validation
-- DNS operations
-
-Resolved by iteratively expanding least-privilege IAM policies.
-
----
-
-### CloudFront ACM Region Constraint
-
-CloudFront only accepts ACM certificates in:
+CloudFront requires ACM certificates in:
 
 ```text
 us-east-1
 ```
 
-Solution:
-
-Used Terraform provider alias for us-east-1 while keeping workload infra in eu-west-2.
-
----
-
-### Event Loop Prevention
-
-Prevented recursive Lambda execution by filtering:
+while application infrastructure remains in:
 
 ```text
-uploads/
+eu-west-2
 ```
 
-only.
+Handled via Terraform provider aliasing.
 
 ---
 
-## Current Status
+### Mobile EXIF Orientation Issues
 
-✅ Fully deployed production-style web application  
-✅ Browser-based image upload UI  
-✅ HTTPS custom domain hosting  
-✅ Event-driven asynchronous image processing  
-✅ S3 direct uploads via presigned URLs  
-✅ API Gateway + Lambda backend  
-✅ CI/CD deployment pipeline  
-✅ Dead Letter Queue resilience pattern  
-✅ JPG + PNG support  
-✅ format preservation after processing
+Problem:
+
+Mobile uploads appeared rotated incorrectly.
+
+Solution:
+
+EXIF normalization during image processing.
 
 ---
 
-## Future Improvements
+### Browser Compatibility Issues
 
-- EXIF orientation correction
-- DynamoDB metadata storage
-- EventBridge monitoring/reporting
-- CloudWatch dashboards
-- multiple processing modes (thumbnail / web / high quality)
-- auth / user isolation
-- drag-and-drop uploads
-- progress event improvements
-
----
+Safari-specific frontend rendering inconsistencies required frontend compatibility fixes.
 
 ## Tech Stack
 
-AWS:
+### AWS
 
 - S3
+- CloudFront
 - API Gateway
 - Lambda
 - SQS
-- CloudFront
+- Dead Letter Queue
+- IAM
 - Route 53
 - ACM
-- IAM
+- CloudWatch
+- SNS
+- DynamoDB
 
-DevOps:
+### DevOps / Infrastructure
 
 - Terraform
 - GitHub Actions
 - Docker
 
-Backend:
+### Backend
 
 - Python
+- Pillow
 
-Frontend:
+### Frontend
 
 - HTML
 - CSS
-- JavaScript
+- Vanilla JavaScript
+
+---
+
+## Future Improvements
+
+Potential future enhancements:
+
+- GitHub Actions OIDC authentication
+- Terraform validation / plan gates in CI
+- CloudFront Origin Access Control (private frontend bucket)
+- API custom domain
+- CloudWatch dashboard
+- main SQS queue backlog monitoring
+- API Gateway 5XX monitoring
+- DynamoDB metadata tracking
+- user authentication / access control
+- batch image uploads
+- WebP / AVIF support
+
+---
+
+## Portfolio Context
+
+This project was built as a cloud engineering portfolio project to demonstrate practical AWS engineering capability beyond tutorial-level deployments.
+
+It intentionally emphasizes:
+
+- architecture design
+- operational resilience
+- infrastructure automation
+- deployment workflows
+- debugging real cloud integration issues
+- production-oriented engineering decisions
