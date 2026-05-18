@@ -9,6 +9,43 @@ https://ipp.petkokolev-cloud.com
 
 ---
 
+## Screenshots
+
+### Frontend UI
+Production browser interface for uploading and processing images.
+
+![Frontend UI](assets/frontend-home.png)
+
+---
+
+### Processing Workflow
+Image upload and asynchronous backend processing in progress.
+
+![Processing Workflow](assets/processing.png)
+
+---
+
+### Completed Processing Result
+Original vs processed output with downloadable result.
+
+![Completed Upload](assets/completed-upload.png)
+
+---
+
+### Monitoring & Alerting
+CloudWatch alarms for operational visibility.
+
+![CloudWatch Monitoring](assets/cloudwatch-alarms.png)
+
+---
+
+### SNS Alert Notifications
+Email alerting for production issue detection.
+
+![SNS Alert](assets/sns-alert.png)
+
+---
+
 ## Project Overview
 
 This project began as a simple image processing concept and evolved into a production-style cloud engineering portfolio project designed to demonstrate practical AWS architecture and DevOps capability beyond beginner projects.
