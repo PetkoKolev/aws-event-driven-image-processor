@@ -12,7 +12,7 @@ resource "aws_lambda_function" "image_processor" {
 
   role = aws_iam_role.processor_lambda_role.arn
 
-  timeout = 30
+  timeout     = 30
   memory_size = 1024
 }
 
