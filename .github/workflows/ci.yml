@@ -1,7 +1,7 @@
-name: Deploy AWS Image Processor
+name: CI Checks
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
 
     steps:
@@ -46,12 +46,18 @@ jobs:
           role-to-assume: arn:aws:iam::525238913839:role/github-actions-terraform-deploy
           aws-region: eu-west-2
 
-      - name: Terraform Apply
+      - name: Terraform Format Check
         working-directory: image-processing-pipeline
-        run: |
-          terraform init
-          terraform apply -auto-approve
+        run: terraform fmt -check
 
-      - name: Upload frontend to S3
-        run: |
-          aws s3 sync frontend/ s3://ipp-frontend-petkokolev-cloud-com --delete
+      - name: Terraform Init
+        working-directory: image-processing-pipeline
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: image-processing-pipeline
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: image-processing-pipeline
+        run: terraform plan
