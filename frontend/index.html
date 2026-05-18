@@ -85,14 +85,20 @@
     const originalPlaceholder = document.getElementById("originalPlaceholder");
     const processedPlaceholder = document.getElementById("processedPlaceholder");
 
+    let currentPreviewUrl = null;
+
     uploadBtn.addEventListener("click", upload);
 
     function showPreview(file) {
       if (!file) return;
 
-      const previewUrl = URL.createObjectURL(file);
+      if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+      }
 
-      originalImg.src = previewUrl;
+      currentPreviewUrl = URL.createObjectURL(file);
+
+      originalImg.src = currentPreviewUrl;
       originalImg.style.display = "block";
       originalPlaceholder.style.display = "none";
 
@@ -160,12 +166,21 @@
         }
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        let errorMessage = "Upload API failed";
 
-      if (!data.upload_url || !data.file_key) {
-        alert("Upload API failed");
+        try {
+          const err = await res.json();
+          errorMessage = err.error || errorMessage;
+        } catch {
+          // fallback if response isn't JSON
+        }
+
+        alert(errorMessage);
         return;
       }
+
+      const data = await res.json();
 
       progressBar.style.width = "30%";
 
@@ -217,9 +232,11 @@
             downloadBtn.style.display = "inline-block";
 
             downloadBtn.onclick = () => {
+              const extension = file.type === "image/png" ? "png" : "jpg";
+
               const a = document.createElement("a");
               a.href = signedUrl;
-              a.download = "processed-image.jpg";
+              a.download = `processed-image.${extension}`;
               document.body.appendChild(a);
               a.click();
               a.remove();
