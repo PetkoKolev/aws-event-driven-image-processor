@@ -163,9 +163,9 @@ resource "aws_cloudwatch_dashboard" "image_pipeline_dashboard" {
           stat   = "Average"
           period = 300
           metrics = [
-            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.image_processing_queue.name],
+            ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.image_queue.name],
             [".", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.dlq.name]
-          ]
+        ]
         }
       }
     ]
